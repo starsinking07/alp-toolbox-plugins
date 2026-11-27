@@ -19,7 +19,7 @@ $file = 'Alp-Performance-Overlay-setup-v1.exe'
 
 6e3e6a771661e03b2be152366b444c678626bf55a55c9defa5e9b42757f7c6e3
 
-[SHA-256 校验清单](dist/SHA256SUMS.txt)
+[SHA-256 校验清单](https://raw.githubusercontent.com/starsinking07/alp-toolbox-plugins/main/plugins/performance-overlay/dist/SHA256SUMS.txt)
 
 ## 开启浮窗
 

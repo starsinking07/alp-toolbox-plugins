@@ -15,7 +15,7 @@ Alp 工具箱是黑鲨风神 Pro（BRB02）和黑鲨风神（BRB03）的 Windows
 
 6e3e6a771661e03b2be152366b444c678626bf55a55c9defa5e9b42757f7c6e3
 
-[完整校验清单](plugins/performance-overlay/dist/SHA256SUMS.txt)
+[完整校验清单](https://raw.githubusercontent.com/starsinking07/alp-toolbox-plugins/main/plugins/performance-overlay/dist/SHA256SUMS.txt)
 
 </details>
 
