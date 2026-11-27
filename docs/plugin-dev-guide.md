@@ -1,114 +1,49 @@
-# Alp Toolbox 自制扩展与插件开发教程
+# 为 Alp 制作扩展
 
-本指南说明如何为 [**Alp 工具箱（Alp Toolbox）**](https://github.com/starsinking07/alp-toolbox) 设计、打包、校验并提交可选扩展或插件（结构规范以 [schemas/catalog.schema.json](../schemas/catalog.schema.json) 与 [schemas/plugin.schema.json](../schemas/plugin.schema.json) 为准）。
+从可独立安装、卸载的 Windows 安装包做起。扩展文件有自己的目录和校验值，宿主源码负责识别可信载荷并在「设置 → 扩展」显示卡片。[起步模板](../templates/extension-template/README.md)
 
----
+## 1. 规划扩展文件
 
-## 1. 扩展架构与运行形态概览
+为扩展选择唯一 ID 和目录名，例如 `vendor.example-extension` 和 `plugins/example-extension/`。给使用者写明适用机型、用途、需要的 Alp 版本以及安装、重启和卸载步骤。
 
-### 当前已落地的官方形态：`optional-installer`
+- 用 `plugin.json` 登记名称、版本、平台和安装器信息。[扩展清单规范](../schemas/plugin.schema.json)
+- 用 `installer/` 保存 NSIS 源文件，成品及其 `SHA256SUMS.txt` 放在 `dist/`。
+- 随包分发第三方程序时，保留对应的许可证和通知，并在扩展说明里标明来源。
 
-- **独立安装隔离**：将可选辅助二进制、许可协议与单独卸载入口拆出主安装包，按需安装到 `Program Files\Alp Toolbox Extensions\<ExtensionName>\v<Major>`（64 位受保护目录，避免普通进程或第三方篡改）。
-- **零猜测强校验**：Alp 工具箱主程序不在安装阶段盲信磁盘文件名，也不从临时目录或源码路径顺手加载，而是在定位受保护目录内的核心载荷文件时计算**小写 64 位 SHA-256 摘要**；只有哈希严格匹配已签名清单时才激活该扩展模块，其余情形自动退回为「未安装」并保留用户已有配置。
-- **零进程注入**：不向游戏或系统进程注入 DLL；以官方 [performance-overlay](../plugins/performance-overlay/README.md) 为例，帧率采集仅通过独立可信进程读取 Intel PresentMon ETW 会话并由工具箱界面按需刷新。
-- **独立生命周期与卸载**：扩展单独在注册表 `HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\<Key>` 登记卸载项，既可从 Windows「已安装的应用」卸载，也可在 **设置 → 扩展** 卡片右上角直接拉起卸载器。
+## 2. 打包成可独立卸载的程序
 
-### 后续规划形态：`sidecar` / `ui-module`
+复制模板，先用自己的载荷完成安装和卸载测试。现有宿主采用 64 位 Program Files 目录，例如 `Program Files\Alp Toolbox Extensions\Example Extension\v1`。NSIS 中用 `$PROGRAMFILES64` 取系统目录，用 `SetRegView 64` 将唯一的卸载键写入 `HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall`。
 
-- [catalog.schema.json](../schemas/catalog.schema.json) 与 [plugin.schema.json](../schemas/plugin.schema.json) 同时为后续按需拉起的独立守护进程（`sidecar`）与纯界面模块（`ui-module`）预留了清单枚举字段（见 [examples/catalog.sample.json](../examples/catalog.sample.json)）；当前核心主程序按扩展专用识别逻辑加载官方扩展，若需让第三方扩展在面板直接显示，需同时向主仓库提交宿主接入 PR（见第 4 节）。
+卸载器只处理安装器列出的文件。核心载荷被占用时，提示用户从托盘退出 Alp 后再试，并保留卸载条目。版本并排安装时，应给对应版本分配独立的目录和卸载键。[NSIS 模板](../templates/extension-template/installer/extension-template.nsi) · [性能浮窗安装器参考](../plugins/performance-overlay/installer/Alp-performance-overlay.nsi)
 
----
+## 3. 核对两种 SHA-256
 
-## 2. 目录结构与清单字段规范
+- `sha256` 和 `size` 记录下载的安装包 SHA-256 和字节数。将同一个安装包摘要写入 `dist/SHA256SUMS.txt`。
+- `payloadSha256` 记录安装后供宿主验证的核心文件 SHA-256。性能浮窗的核心文件是 `PresentMon.exe`，宿主在源码中固定其路径和预期哈希。
+- 清单中的下载链接应指向可直接下载的安装包。提交目录收录时，让 `catalog.json` 的条目与该扩展的 `plugin.json` 一致。模板里的站点、哈希和大小都是示例值。[目录示例](../examples/catalog.sample.json) · [目录清单规范](../schemas/catalog.schema.json)
 
-每个扩展目录应放在 `plugins/<slug>/` 下（建议使用小写字母、数字和短横线），典型结构如下：
+对已经确认过的载荷先校验、后启动。涉及采帧时沿用独立进程与 ETW 的方式，保持对游戏进程零注入。
 
-```text
-plugins/<slug>/
-├─ README.md                       # 扩展简介、安装/卸载说明、SHA-256 与版本要求
-├─ plugin.json                     # 扩展元数据清单（必须匹配 plugin.schema.json）
-├─ installer/<slug>.nsi            # NSIS Unicode 安装脚本（推荐写入 Program Files\Alp Toolbox Extensions\...）
-├─ licenses/                       # 若携带任何第三方二进制，必须随附原始 LICENSE 与 NOTICE
-└─ dist/
-   ├─ Alp-<Name>-setup-v1.exe      # 独立扩展安装包
-   └─ SHA256SUMS.txt               # `<sha256>  <filename>` 格式校验文件
+## 4. 接入 Alp 的扩展卡片
+
+当前 Alp 通过宿主源码显式登记每项扩展。目录清单用于分发与校验，卡片及运行控制随宿主版本发布。开发时使用包含以下接口的 Alp 宿主源码。本文对照的宿主构建是 `20261127-v8-extensions-repo-preview`。[Alp 主项目](https://github.com/starsinking07/alp-toolbox)
+
+1. 在宿主中实现已安装检测。可参考 `brb02/overlay_extension.py`，从 Program Files 中的固定位置核对核心载荷 SHA-256，随后把检测结果传给卡片。
+2. 在 `brb02/gui/pages.py` 的 `_build_extensions_tab()` 里，把 `ExtensionCard` 加入 `ExtensionsPanel`。安装完整但未运行时传 `ready`，功能已启动时传 `running`，缺文件或校验失败时传 `absent`。让获取、卸载和运行开关调用各自的宿主回调。
+3. 用 `make_extension_subcard()` 生成抽屉里的设置分区，把控件放入返回的布局，再把子卡片加入 `card.drawer_layout`。这样设置区可以沿用宿主的玻璃与实色主题。
+4. 宿主确认启停结果后，更新开关和 `card.set_status()`，再调用 `panel.apply_filters()`。安装或卸载后，重启工具箱会重新读取安装状态。[卡片示例源码](../templates/extension-template/host-snippet/card_example.py)
+
+## 5. 验证和提交
+
+- 测试未安装、校验失败、已安装、启动、退出和独立卸载。安装或卸载完成后，从托盘退出并重开 Alp，确认卡片状态与磁盘一致。
+- 检查提交的代码、文档和日志，移除本机路径、私人账户名及真实设备地址。给出可复查的安装包与核心文件摘要。
+- 推送前运行离线校验。发布到 GitHub 后加 `--online` 再跑一次，核对线上链接、清单和下载包。
+
+```powershell
+py -3.14 -B scripts/verify_repo.py
+py -3.14 -B scripts/verify_repo.py --online
 ```
 
-### `plugin.json` 核心字段
+扩展仓库提交安装器、清单、许可证和验证结果。宿主检测、卡片和运行接线随配套代码提交给 Alp 主项目。
 
-| 字段 | 类型 / 格式 | 说明 |
-| --- | --- | --- |
-| `id` | `^[a-z0-9][a-z0-9.-]{1,63}$` | 全局唯一 ID，建议使用 `<vendor>.<name>`（例如 `alp.performance-overlay`） |
-| `name` | string | 扩展显示名称（支持中文，如 `性能浮窗`） |
-| `description` | string | 一句话功能说明，将显示在「设置 → 扩展」卡片头部 |
-| `version` | `X.Y.Z` | 语义化版本号 |
-| `category` | `telemetry \| hardware \| ui \| integration \| utility` | 扩展分类 |
-| `runtime` | `optional-installer \| sidecar \| ui-module` | 运行形态 |
-| `uiSlot` | `settings-extensions \| sidebar-page \| tray-menu \| none` | 界面挂载位置 |
-| `platform` | `windows-amd64` | 目标平台 |
-| `minCoreVersion` | string | 最低兼容主程序版本号（如 `0.2.2-beta-v8-Preview`） |
-| `installerName` | `*.exe` | `dist/` 中安装器文件名 |
-| `installDir` | string | 默认安装目录说明，建议遵循 `Program Files\Alp Toolbox Extensions\<Name>\v1` |
-| `downloadUrl` | `https://...` | 对 `alp-toolbox-plugins` 仓库一般为 `https://github.com/starsinking07/alp-toolbox-plugins/raw/main/plugins/<slug>/dist/<installerName>` |
-| `sha256` | 64 位小写十六进制 | `installerName` 安装包本体的 SHA-256 |
-| `payloadSha256` | 64 位小写十六进制 | 核心载荷文件（如采集器主 exe）的 SHA-256 |
-| `size` | 正整数 | 安装包字节大小 |
-| `restartRequired` | boolean | 安装/卸载后是否需要从托盘完全退出并重开工具箱 |
-
----
-
-## 3. 零基础制作一个自制扩展（完整步骤）
-
-仓库内的 [templates/extension-template/](../templates/extension-template/README.md) 提供了可直接改写的全套起步文件：
-
-1. **复制模板目录**
-   - 将 `templates/extension-template/` 复制为 `plugins/<your-ext>/`（例如 `plugins/my-fan-sensor/`）。
-2. **编写 `plugin.json` 与 `README.md`**
-   - 修改 `id`、`name`、`description`、`installerName`、`installDir` 与 `licenses/`（如有第三方可执行文件或库，务必保留原始许可证文件）。
-3. **编写 NSIS 安装脚本**
-   - 参考 `templates/extension-template/installer/extension-template.nsi` 与官方 [Alp-performance-overlay.nsi](../plugins/performance-overlay/installer/Alp-performance-overlay.nsi)：
-     - 开启 `Unicode true` 与 `ManifestDPIAware true`；
-     - `RequestExecutionLevel admin` 并使用 `SetRegView 64`，固定写入 `$PROGRAMFILES64\Alp Toolbox Extensions\<Name>\v1`；
-     - 在写入 `Uninstall.exe` 的同时写入 `HKLM\Software\Microsoft\Windows\CurrentVersion\Uninstall\<Key>` 键值（`DisplayName`、`DisplayVersion`、`InstallLocation`、`UninstallString`、`NoModify=1`、`NoRepair=1`），并在 `Section "Uninstall"` 中检测关键文件若正被工具箱占用则友好提示退出后再卸载。
-4. **构建安装包并计算 SHA-256**
-   - 用 NSIS 3.x 编译 `.nsi` 生成 `dist/<installerName>`；
-   - 计算安装包本体 `sha256`、精确字节数 `size` 以及核心载荷 `payloadSha256`，同步写入 `dist/SHA256SUMS.txt`、`plugins/<your-ext>/plugin.json` 与根目录 `catalog.json`：
-     ```powershell
-     Get-FileHash .\plugins\<your-ext>\dist\<installerName> -Algorithm SHA256
-     ```
-5. **运行仓库离线校验**
-   - 在仓库根目录执行：
-     ```bash
-     python scripts/verify_repo.py
-     ```
-   - 确认所有 JSON、Schema 字段、SHA-256/文件大小、相对链接、示例代码语法和隐私规范全部通过（0 报错）。
-
----
-
-## 4. 在 Alp 工具箱主程序接入扩展界面
-
-Alp 工具箱在 **设置 → 扩展** 中已封装标准化组件 [brb02/gui/extensions_ui.py](https://github.com/starsinking07/alp-toolbox/blob/main/brb02/gui/extensions_ui.py)，风格对齐 FanControl 卡片规范（也可对照 [templates/extension-template/host-snippet/card_example.py](../templates/extension-template/host-snippet/card_example.py)）：
-
-- **`ExtensionsPanel`**：提供搜索输入框（`#ExtSearch`，36px 高度配 18px 圆角）、四态筛选切换按钮（`全部` / `已安装` / `运行中` / `未安装`，`#ExtFilterPill` 34px 高配 14px 圆角）、卡片列表容器 `add_card(...)` 与无结果提示空态卡 `empty_card`。
-- **`ExtensionCard`**：继承玻璃质感容器 `GlassFrame`（切记**不要**在折叠抽屉 `drawer_layout` 里再嵌套 `GlassFrame`，以免产生双重模糊折射；子分区统一使用 `make_extension_subcard(title, hint)` 创建边框 `QFrame`）。主要构造参数：
-  - `ext_id`, `name`, `version`, `mode_label`, `description`
-  - `status`：`'running'`（运行中）、`'ready'`（已安装未启动）、`'absent'`（未安装）
-  - `toggle_widget`：右上角状态开关（未安装态可传禁用的惰性 `Toggle(False)`）
-  - `installed`：`bool`，决定抽屉按钮文案（`展开设置`/`收起设置` 或 `安装说明`/`收起说明`）与筛选分组
-  - `icon_kind` / `accent_color` / `secondary_label` / `on_secondary` / `secondary_enabled` / `expanded` / `keywords`
-- **常用联动方法**：
-  - `card.set_status('running' | 'ready' | 'absent')`：实时刷新右上状态徽章配色并触发 `QStyle` 重绘；
-  - `card.set_accent(colors['primary'])`：跟随用户自定义主题强调色切换；
-  - `extensions_panel.apply_filters()`：搜索词与筛选状态变更时自动刷新可见性。
-
----
-
-## 5. 安全与提交检查清单
-
-提交 PR 到 `alp-toolbox-plugins` 前请逐项确认：
-
-- [ ] 不向游戏或系统进程注入任何 DLL；核心辅助文件采用强 SHA-256 白名单校验；
-- [ ] 所有第三方组件已在 `licenses/` 附带完整原始 `LICENSE` 与 `NOTICE`；
-- [ ] `plugin.json`、`catalog.json`、`dist/SHA256SUMS.txt` 与实际 `.exe` 的哈希与字节数完全一致；
-- [ ] 所有文档、清单、NSIS 与脚本中不含任何本机路径、个人用户名、密钥或真实硬件 MAC 地址；
-- [ ] 本地执行 `python scripts/verify_repo.py` 全部通过。
+[返回 Alp 扩展中心](../README.md)

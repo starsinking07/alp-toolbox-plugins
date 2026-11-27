@@ -1,9 +1,5 @@
-# 官方扩展目录 (`plugins/`)
+# Alp 官方扩展
 
-本目录汇总经校验发布的 Alp Toolbox 官方可选扩展安装包与清单。
+**性能浮窗**给黑鲨风神 Pro（BRB02）和黑鲨风神（BRB03）添加桌面读数，可在游戏时查看帧率、电脑温度和散热器转速。[下载、安装与校验](performance-overlay/README.md)
 
-| ID | 名称 | 版本 | 运行形态 | 状态 | 说明与下载 |
-| --- | --- | --- | --- | --- | --- |
-| `alp.performance-overlay` | 性能浮窗 | `1.0.0` | `optional-installer` | 已发布 | [performance-overlay/README.md](performance-overlay/README.md) |
-
-想开发或打包新扩展，请查看 [自制扩展与插件开发教程](../docs/plugin-dev-guide.md) 与 [扩展起步模板](../templates/extension-template/README.md)。
+[返回 Alp 扩展中心](../README.md) · [制作扩展](../docs/plugin-dev-guide.md)

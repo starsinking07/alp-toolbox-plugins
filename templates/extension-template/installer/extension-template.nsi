@@ -5,6 +5,8 @@ ManifestDPIAware true
 !define APP_NAME "Alp 示例扩展"
 !define EXT_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Alp Example Extension"
 !define EXT_SUBDIR "Example Extension\v1"
+!define EXT_VERSION "1.0.0"
+!define PAYLOAD_FILE "ExampleExtension.exe"
 !ifndef SETUP_OUT
   !define SETUP_OUT "..\dist\Alp-Example-Extension-setup-v1.exe"
 !endif
@@ -14,8 +16,6 @@ OutFile "${SETUP_OUT}"
 InstallDir "$PROGRAMFILES64\Alp Toolbox Extensions\${EXT_SUBDIR}"
 RequestExecutionLevel admin
 SetCompressor /SOLID lzma
-!define MUI_ICON "..\..\..\..\assets\app.ico"
-!define MUI_UNICON "..\..\..\..\assets\app.ico"
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_INSTFILES
@@ -30,14 +30,13 @@ Section "Install"
   SetOutPath "$INSTDIR"
   SetOverwrite on
   ClearErrors
-  ; 在此处列出待随包安装的载荷与许可协议文件：
-  ; File "..\payload\MyExtension.exe"
-  ; File "..\licenses\LICENSE.txt"
+  File "..\payload\${PAYLOAD_FILE}"
+  ; 随包带许可证时，补上对应的 File 和 Delete 指令。
   IfErrors install_failed
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   IfErrors install_failed
   WriteRegStr HKLM "${EXT_KEY}" "DisplayName" "${APP_NAME}"
-  WriteRegStr HKLM "${EXT_KEY}" "DisplayVersion" "1"
+  WriteRegStr HKLM "${EXT_KEY}" "DisplayVersion" "${EXT_VERSION}"
   WriteRegStr HKLM "${EXT_KEY}" "Publisher" "Alp Toolbox Community"
   WriteRegStr HKLM "${EXT_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "${EXT_KEY}" "UninstallString" '$\"$INSTDIR\Uninstall.exe$\"'
@@ -54,9 +53,8 @@ SectionEnd
 Section "Uninstall"
   SetRegView 64
   ClearErrors
-  ; 删除载荷文件并检查占用，例如：
-  ; Delete "$INSTDIR\MyExtension.exe"
-  ; IfFileExists "$INSTDIR\MyExtension.exe" in_use
+  Delete "$INSTDIR\${PAYLOAD_FILE}"
+  IfFileExists "$INSTDIR\${PAYLOAD_FILE}" in_use
   Delete "$INSTDIR\Uninstall.exe"
   RMDir "$INSTDIR"
   DeleteRegKey HKLM "${EXT_KEY}"
