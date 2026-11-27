@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-27T13:05:00Z",
+  "repository": "https://github.com/starsinking07/alp-toolbox-plugins",
+  "mainRepository": "https://github.com/starsinking07/alp-toolbox",
+  "branch": "main",
+  "plugins": [
+    {
+      "id": "alp.performance-overlay",
+      "name": "性能浮窗",
+      "description": "在桌面与无边框游戏中实时显示帧率（PresentMon ETW）、温度、负载、功耗与散热器转速，零进程注入",
+      "version": "1.0.0",
+      "category": "telemetry",
+      "runtime": "optional-installer",
+      "uiSlot": "settings-extensions",
+      "platform": "windows-amd64",
+      "minCoreVersion": "0.2.2-beta-v8-Preview",
+      "installerName": "Alp-Performance-Overlay-setup-v1.exe",
+      "installDir": "Program Files\\Alp Toolbox Extensions\\Performance Overlay\\v1",
+      "homepage": "https://github.com/starsinking07/alp-toolbox-plugins/tree/main/plugins/performance-overlay",
+      "downloadUrl": "https://github.com/starsinking07/alp-toolbox-plugins/raw/main/plugins/performance-overlay/dist/Alp-Performance-Overlay-setup-v1.exe",
+      "sha256": "6e3e6a771661e03b2be152366b444c678626bf55a55c9defa5e9b42757f7c6e3",
+      "payloadSha256": "226847b84157a168dc0cddd6cfe7cef2c04128b2dd333205c37b141af8e0bf4f",
+      "size": 284665,
+      "restartRequired": true,
+      "tags": [
+        "overlay",
+        "fps",
+        "presentmon",
+        "telemetry"
+      ]
+    }
+  ]
+}

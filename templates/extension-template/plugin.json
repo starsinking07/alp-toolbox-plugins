@@ -1,0 +1,23 @@
+{
+  "id": "vendor.example-extension",
+  "name": "示例扩展（模板）",
+  "description": "在此填写扩展功能一句话说明，将显示在 Alp 工具箱「设置 → 扩展」卡片标题下方",
+  "version": "1.0.0",
+  "category": "utility",
+  "runtime": "optional-installer",
+  "uiSlot": "settings-extensions",
+  "platform": "windows-amd64",
+  "minCoreVersion": "0.2.2-beta-v8-Preview",
+  "installerName": "Alp-Example-Extension-setup-v1.exe",
+  "installDir": "Program Files\\Alp Toolbox Extensions\\Example Extension\\v1",
+  "homepage": "https://github.com/starsinking07/alp-toolbox-plugins",
+  "downloadUrl": "https://github.com/starsinking07/alp-toolbox-plugins/raw/main/plugins/example-extension/dist/Alp-Example-Extension-setup-v1.exe",
+  "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "payloadSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "size": 1024,
+  "restartRequired": true,
+  "tags": [
+    "template",
+    "example"
+  ]
+}
