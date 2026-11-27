@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+from urllib.error import URLError
 from urllib.parse import quote, unquote, urlsplit
 from urllib.request import Request, urlopen
 
@@ -80,10 +81,11 @@ def _check_privacy_and_hygiene(public_owner: str) -> None:
     print(f'[PASS] Privacy & hygiene scan ({checked} text files)')
 
 
-def _check_markdown_links(catalog: dict, raw_base: str) -> set[str]:
+def _check_markdown_links(catalog: dict, raw_base: str) -> tuple[set[str], set[str]]:
     repo = catalog['repository']
     branch = catalog['branch']
     links = set()
+    linked_paths = set()
     resolved_count = 0
     routes = (
         (f'{repo}/tree/{branch}/', True),
@@ -106,6 +108,7 @@ def _check_markdown_links(catalog: dict, raw_base: str) -> set[str]:
                         exists = path.is_dir() if is_dir else path.is_file()
                         if not path.is_relative_to(REPO_ROOT) or not exists:
                             raise ValueError(f'Broken GitHub path in {md.relative_to(REPO_ROOT)}: {target}')
+                        linked_paths.add(path.relative_to(REPO_ROOT).as_posix())
                         resolved_count += 1
                         break
                 continue
@@ -115,11 +118,10 @@ def _check_markdown_links(catalog: dict, raw_base: str) -> set[str]:
             path = (md.parent / unquote(url.path)).resolve()
             if not path.is_relative_to(REPO_ROOT) or not path.exists():
                 raise ValueError(f'Broken relative link in {md.relative_to(REPO_ROOT)}: {target}')
-            route = 'tree' if path.is_dir() else 'blob'
-            links.add(f'{repo}/{route}/{branch}/{quote(path.relative_to(REPO_ROOT).as_posix())}')
+            linked_paths.add(path.relative_to(REPO_ROOT).as_posix())
             resolved_count += 1
     print(f'[PASS] Markdown relative and repository links ({resolved_count} paths resolved)')
-    return links
+    return links, linked_paths
 
 
 def _check_python_syntax() -> None:
@@ -188,10 +190,29 @@ def _check_catalog_and_plugins() -> tuple[dict, dict[str, Path]]:
     return catalog, downloads
 
 
+def _open_github(url: str):
+    request = Request(url, headers={'User-Agent': 'Alp-Extension-Repository-Check'})
+    try:
+        return urlopen(request, timeout=20)
+    except URLError as error:
+        raise ValueError(f'GitHub request failed for {url}: {error.reason}') from error
+
+
+def _check_published_paths(repository: str, branch: str, linked_paths: set[str]) -> None:
+    url = f'https://api.github.com/repos/{repository}/git/trees/{quote(branch, safe="")}?recursive=1'
+    with _open_github(url) as response:
+        tree = json.load(response)
+    if tree.get('truncated'):
+        raise ValueError('Published GitHub tree is incomplete')
+    missing = linked_paths - {entry['path'] for entry in tree['tree']}
+    if missing:
+        raise ValueError(f'Linked paths missing from GitHub: {sorted(missing)}')
+    print(f'[PASS] Linked paths in the published GitHub tree ({len(linked_paths)} targets)')
+
+
 def _check_online(links: set[str], downloads: dict[str, Path]) -> None:
     for url in sorted(links | downloads.keys()):
-        request = Request(url, headers={'User-Agent': 'Alp-Extension-Repository-Check'})
-        with urlopen(request, timeout=20) as response:
+        with _open_github(url) as response:
             if local := downloads.get(url):
                 if local.suffix == '.json':
                     matches = json.load(response) == json.loads(local.read_text(encoding='utf-8'))
@@ -212,10 +233,11 @@ def main() -> int:
     catalog, downloads = _check_catalog_and_plugins()
     repository_path = urlsplit(catalog['repository']).path.strip('/')
     raw_base = f'https://raw.githubusercontent.com/{repository_path}/{catalog["branch"]}/'
-    links = _check_markdown_links(catalog, raw_base)
+    links, linked_paths = _check_markdown_links(catalog, raw_base)
     _check_python_syntax()
     _check_privacy_and_hygiene(repository_path.split('/', 1)[0])
     if options.online:
+        _check_published_paths(repository_path, catalog["branch"], linked_paths)
         links.update(entry['homepage'] for entry in catalog['plugins'] if 'homepage' in entry)
         downloads[f'{raw_base}catalog.json'] = REPO_ROOT / 'catalog.json'
         _check_online(links, downloads)
