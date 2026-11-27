@@ -1,6 +1,6 @@
 # Alp 工具箱官方插件与扩展仓库 (`alp-toolbox-plugins`)
 
-本仓库为 [**Alp 工具箱（Alp Toolbox）**](https://github.com/starsinking07/alp-toolbox) 的独立扩展与插件仓库，参考 [`FanControl-Plugins`](https://github.com/Eureka-o/FanControl-Plugins) 组织形式，统一托管官方可选扩展安装包、目录索引 `catalog.json`（`schemaVersion: 1`）、JSON Schema、开源许可，以及第三方**自制扩展开发教程与起步模板**。
+本仓库为 [**Alp 工具箱（Alp Toolbox）**](https://github.com/starsinking07/alp-toolbox) 的独立扩展与插件仓库，统一托管官方可选扩展安装包、目录索引 `catalog.json`（`schemaVersion: 1`）、JSON Schema、开源许可，以及第三方**自制扩展开发教程与起步模板**。
 
 > **Official Extensions & Plugins Repository** for [Alp Toolbox](https://github.com/starsinking07/alp-toolbox): verified extension installers, catalog metadata, JSON schemas, DIY developer tutorial, starter template, and validation scripts.
 
