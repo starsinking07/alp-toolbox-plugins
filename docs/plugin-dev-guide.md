@@ -46,4 +46,12 @@ py -3.14 -B scripts/verify_repo.py --online
 
 扩展仓库提交安装器、清单、许可证和验证结果。宿主检测、卡片和运行接线随配套代码提交给 Alp 主项目。
 
+## 6. 在 GitHub Releases 发布
+
+每个扩展按自己的版本发布。标签使用 `<目录名>-v<版本>`，例如 `performance-overlay-v1.0.0`。发布标题写扩展名称和版本，方便从同一列表挑选。
+
+1. 在发布草稿附上扩展安装包与对应的 `SHA256SUMS.txt`。
+2. 写清适用机型、所需 Alp 版本、安装后重启要求和卸载方式。
+3. 发布后从公开附件重新下载并核对哈希，将发布页链接加入扩展说明。[扩展发布列表](https://github.com/starsinking07/alp-toolbox-plugins/releases)
+
 [返回 Alp 扩展中心](../README.md)

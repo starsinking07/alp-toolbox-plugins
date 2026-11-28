@@ -4,7 +4,9 @@
 
 ## 下载和校验
 
-**[下载 Windows 安装包](https://github.com/starsinking07/alp-toolbox-plugins/raw/main/plugins/performance-overlay/dist/Alp-Performance-Overlay-setup-v1.exe)** · 扩展 1.0.0 · 284,665 字节
+**[下载 Windows 安装包](https://github.com/starsinking07/alp-toolbox-plugins/releases/download/performance-overlay-v1.0.0/Alp-Performance-Overlay-setup-v1.exe)** · 扩展 1.0.0 · 284,665 字节
+
+[版本说明与附件](https://github.com/starsinking07/alp-toolbox-plugins/releases/tag/performance-overlay-v1.0.0) · [仓库直链](https://github.com/starsinking07/alp-toolbox-plugins/raw/main/plugins/performance-overlay/dist/Alp-Performance-Overlay-setup-v1.exe)
 
 需要 Windows x64 和提供「设置 → 扩展」的 Alp 0.2.2 Beta v8 Preview。[Alp 工具箱项目](https://github.com/starsinking07/alp-toolbox)
 
@@ -19,7 +21,7 @@ $file = 'Alp-Performance-Overlay-setup-v1.exe'
 
 6e3e6a771661e03b2be152366b444c678626bf55a55c9defa5e9b42757f7c6e3
 
-[SHA-256 校验清单](https://raw.githubusercontent.com/starsinking07/alp-toolbox-plugins/main/plugins/performance-overlay/dist/SHA256SUMS.txt)
+[SHA-256 校验清单](https://github.com/starsinking07/alp-toolbox-plugins/releases/download/performance-overlay-v1.0.0/SHA256SUMS.txt)
 
 ## 开启浮窗
 
